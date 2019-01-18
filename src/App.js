@@ -1,116 +1,154 @@
 import React, { Component } from "react";
-import { Card, Col, Row } from "antd";
+import CardList from "./components/CardList";
+import TableCart from "./components/TableCart";
 
-import { getProducts, getDummy } from "./fetch/GetData";
+import { getProducts } from "./fetch/GetData";
 import { rupiahConverter } from "./utils/currency-convertes";
-import Config from "./fetch/Config";
+// import Config from "./fetch/Config";
 import "./App.css";
 
 const URL =
-  process.env.NODE_ENV === "development" ? Config.prodURL : Config.devURL;
+  "http://s3.irvinsaltedegg.com.s3-ap-southeast-1.amazonaws.com/engineering-test/products.json";
 
 class App extends Component {
   state = {
     products: [],
     dummyProducts: [],
-    leftColumnData:[],
-    middleColumnData:[],
-    rightColumnData:[]
+    leftColumnData: [],
+    middleColumnData: [],
+    rightColumnData: [],
+    dataCart: [],
+    status: false
   };
 
   componentDidMount() {
-    // this.getDataProducts();
-    this.getDummyData();
-  }
-
-  componentDidUpdate() {
     // this.getDummyData();
+    this.getDataProducts();
   }
 
-  getDummyData = () => {
-    getDummy().then(result => {
-      console.log(result.data);
+  componentDidUpdate(prevProps, prevState) {
+    // console.log(prevProps.status, this.props.status)
+    // console.log(prevState.status, this.state.status);
+    if (prevState.status !== this.state.status) {
+      this.getColumnData();
+      this.getDataNow();
+    }
+  }
+
+  // getDataCart = () => {
+
+  // }
+
+  getDataNow = () => {
+    const { leftColumnData, middleColumnData, rightColumnData } = this.state;
+    this.setState({
+      dataMiddle: middleColumnData,
+      dataLeft: leftColumnData,
+      dataRight: rightColumnData
+    });
+  };
+
+  getColumnData = () => {
+    const {
+      leftColumnData,
+      middleColumnData,
+      rightColumnData,
+      products
+    } = this.state;
+    const dataLength = products.length;
+    // console.log(products[k]);
+    for (let k = 0; k < dataLength; k++) {
+      if (k === 0) {
+        middleColumnData.push(products[k]);
+      } else if (k > 0 && k < 3) {
+        leftColumnData.push(products[k]);
+      } else {
+        rightColumnData.push(products[k]);
+      }
+    }
+  };
+
+  // getDummyData = () => {
+  //   getDummy().then(result => {
+  //     let i = 1;
+  //     this.setState({
+  //       dummyProducts: result.data.map(data => ({
+  //         dummy_ID: i++,
+  //         // dummy_ID: Math.random(new Date()),
+  //         image: data.image,
+  //         price: rupiahConverter(data.currency, data.price),
+  //         currency: "Rp ",
+  //         name: data.name
+  //       })),
+  //       status: true
+  //     });
+  //   });
+  //   return null;
+  // };
+
+  getDataProducts = () => {
+    getProducts(URL).then(result => {
+      const data = result.data.data;
+      // console.log(data);
       let i = 1;
       this.setState({
-        dummyProducts: result.data.map(data => ({
+        products: data.map(data => ({
           dummy_ID: i++,
-          // dummy_ID: Math.random(new Date()),
           image: data.image,
           price: rupiahConverter(data.currency, data.price),
           currency: "Rp ",
           name: data.name
-        }))
+        })),
+        status: true
       });
     });
     return null;
   };
 
-  getDataProducts = () => {
-    getProducts(URL).then(result => {
-      console.log(result.data);
-      this.setState({
-        products: result.data.map(data => ({
-          dummy_ID: Math.random(new Date()),
-          image: data.image,
-          price: data.price,
-          currency: data.currency,
-          name: data.name
-        }))
-      });
-    });
-    return null;
+  // ========= Add to Cart ================
+
+  handleAddToCart = e => {
+    const { products, dataCart } = this.state;
+    const id = e.target.value;
+    console.log(id);
+    const dataLength = products.length;
+    // console.log(products[k]);
+    for (let k = 0; k < dataLength; k++) {
+      console.log("k",k);
+      if (k == id) {
+        console.log("id",id);
+        dataCart.push(products[k]);
+        this.setState({ status: !this.state.status });
+      }
+    }
+    // return null;
   };
 
   render() {
+    const { middleColumnData, leftColumnData, rightColumnData } = this.state;
+
+    console.log(this.state.dataCart);
+
     return (
       <div style={{ padding: "20px" }}>
         <p className="best-mall">The Best Shopping Mall in The World</p>
-        <Row gutter={2} type="flex" justify="space-between" align="top">
-          <Col xs={{ span: 5, offset: 1 }} lg={{ span: 6, offset: 2 }}>
-            {this.state.dummyProducts.map(data => {
-              return (
-                <Row key={data.dummy_ID}>
-                  <Row>
-                    <Card
-                      hoverable
-                      // style={{ height: 240 }}
-                      cover={
-                        <img
-                          alt="example"
-                          src={data.image}
-                          // height="240px"
-                          width="auto"
-                        />
-                      }
-                    >
-                      <div className="name-price">
-                        <p style={{ color: "orange" }}>{data.name}</p>
-                        <p>from </p>
-                        <p style={{ fontSize: 30 }}>Rp {data.price}</p>
-                      </div>
-                    </Card>
-                  </Row>
-                  <Row type="flex" justify="space-between" align="middle">
-                    <Col>
-                      <Row>Baris 1</Row>
-                      <Row>Baris 2</Row>
-                    </Col>
-                    <Col>
-                      <Row>Baris 1 Kolom 2</Row>
-                    </Col>
-                  </Row>
-                  {/* </Col> */}
-                </Row>
-              );
-            })}
-          </Col>
-          <Col xs={{ span: 11, offset: 1 }} lg={{ span: 6, offset: 2 }}>
-            Col
-          </Col>
-          <Col xs={{ span: 5, offset: 1 }} lg={{ span: 6, offset: 2 }}>
-            Col
-          </Col>
-        </Row>
+        <CardList
+          rightColumnData={rightColumnData}
+          middleColumnData={middleColumnData}
+          leftColumnData={leftColumnData}
+          handleAddToCart={this.handleAddToCart}
+        />
+        <button value="Andri" onClick={this.handleAddToCart.bind(this)}>
+          Tes
+        </button>
+        <hr
+          style={{
+            height: 3,
+            border: "1px solid silver",
+            background: "silver"
+          }}
+        />
+        <TableCart data={this.state.products} />
       </div>
     );
   }
